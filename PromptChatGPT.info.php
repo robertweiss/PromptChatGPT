@@ -9,7 +9,7 @@ $info = array(
     'requires' => [
         'ProcessWire>=3.0.184'
     ],
-//	'href' => 'https://github.com/robertweiss/ProcessTranslatePage',
+	'href' => 'https://github.com/robertweiss/PromptChatGPT',
     'singular' => true,
     'autoload' => 'template=admin'
 );
