@@ -3,7 +3,7 @@
 require_once __DIR__.'/vendor/autoload.php';
 
 use Orhanerday\OpenAi\OpenAi;
-class ProcessChatGPT extends Process implements Module {
+class PromptChatGPT extends Process implements Module {
     private $apiKey;
     private $chatGPT;
     private $sourceField;

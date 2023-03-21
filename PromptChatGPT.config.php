@@ -1,6 +1,6 @@
 <?php namespace ProcessWire;
 
-class ProcessChatGPTConfig extends ModuleConfig {
+class PromptChatGPT extends ModuleConfig {
     // Parts of the code are adopted from the Jumplinks module, thx!
     // Copyright (c) 2016-17, Mike Rockett
 
