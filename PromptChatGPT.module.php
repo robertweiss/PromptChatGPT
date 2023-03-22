@@ -82,16 +82,34 @@ class PromptChatGPT extends Process implements Module {
         $event->return = $actions;
     }
 
-    private function getAnswer(string $value) {
+    private function getAnswer(string $value):string {
         // Trim to max. 10000 chars, which is hopefully less than 4096 tokens
         // https://platform.openai.com/tokenizer
         $sanitizedValue = sanitizer()->trim(sanitizer()->getTextTools()->markupToText($value), 10000);
         $content = trim($this->commandoString.' '.$sanitizedValue);
         $chat = $this->buildPayload($content);
 
-        $result = $this->chatGPT->chat($chat);
-        $result = json_decode($result);
-        $resultText = $result->choices[0]->message->content;
+        try {
+            $result = $this->chatGPT->chat($chat);
+        } catch (\Exception $e) {
+            $this->error($e->getMessage());
+            return '';
+        }
+
+        try {
+            $result = json_decode($result, null, 512, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $e) {
+            $this->error($e->getMessage());
+            return '';
+        }
+
+        if (isset($result->error)) {
+            $this->error($result->error->message);
+
+            return '';
+        }
+
+        $resultText = isset($result->choices) ? $result->choices[0]->message->content : '';
 
         return $resultText;
     }
