@@ -14,7 +14,7 @@ class PromptChatGPTConfig extends ModuleConfig {
     ];
 
     protected function buildInputField($fieldNameId, $meta) {
-        $field = wire('modules')->get($fieldNameId);
+        $field = modules()->get($fieldNameId);
 
         foreach ($meta as $metaNames => $metaInfo) {
             $metaNames = explode('+', $metaNames);
@@ -29,6 +29,7 @@ class PromptChatGPTConfig extends ModuleConfig {
     public function getDefaults() {
         return [
             'apiKey' => '',
+            'includedTemplates' => [],
             'sourceField' => [],
             'targetField' => [],
             'commandoString' => '',
@@ -37,8 +38,8 @@ class PromptChatGPTConfig extends ModuleConfig {
 
     private function getFieldOptions() {
         $fieldsOptions = [];
-        if (wire('fields')) {
-            foreach (wire('fields') as $field) {
+        if (fields()) {
+            foreach (fields() as $field) {
                 if ($field->flags && $field->flags === Field::flagSystem) {
                     continue;
                 }
@@ -46,12 +47,31 @@ class PromptChatGPTConfig extends ModuleConfig {
                     continue;
                 }
 
-                $label = $field->label ? $field->label.' ('.$field->name.')' : $field->name;
+                $label = $field->label ? $field->name.' ('.$field->label.')' : $field->name;
                 $fieldsOptions[$field->name] = $label;
             }
         }
 
+        ksort($fieldsOptions);
+
         return $fieldsOptions;
+    }
+
+    private function getTemplateOptions() {
+        $templatesOptions = [];
+        if (templates()) {
+            foreach (templates() as $template) {
+                if ($template->flags && $template->flags === Template::flagSystem) {
+                    continue;
+                }
+                $label = $template->label ? $template->name.' ('.$template->label.')' : $template->name;
+                $templatesOptions[$template->name] = $label;
+            }
+        }
+
+        ksort($templatesOptions);
+
+        return $templatesOptions;
     }
 
     public function getInputFields() {
@@ -62,7 +82,7 @@ class PromptChatGPTConfig extends ModuleConfig {
                 'name+id' => 'apiKey',
                 'label' => $this->_('ChatGPT API Key'),
                 'description' => $this->_('You need a ChatGPT API key to use this module. API keys can be generated here: https://platform.openai.com/account/api-keys'),
-                'columnWidth' => 100,
+                'columnWidth' => 50,
                 'required' => true,
             ])
         );
@@ -72,7 +92,17 @@ class PromptChatGPTConfig extends ModuleConfig {
                 'name+id' => 'commandoString',
                 'label' => $this->_('Commando string for ChatGPT'),
                 'description' => $this->_('This text will be prefixed to the content of the source field before it will be sent to ChatGPT. You can use it as the commando what to do with the source field'),
-                'columnWidth' => 34,
+                'columnWidth' => 50,
+            ])
+        );
+
+        $inputfields->add(
+            $this->buildInputField('InputfieldASMSelect', [
+                'name+id' => 'includedTemplates',
+                'label' => $this->_('Templates'),
+                'description' => $this->_('Pages with these templates will display the save + send to ChatGPT option in the save dropdown. If no selection is made, the option will be shown on all pages'),
+                'options' => $this->getTemplateOptions(),
+                'columnWidth' => 33,
             ])
         );
 
@@ -92,10 +122,54 @@ class PromptChatGPTConfig extends ModuleConfig {
                 'label' => $this->_('Target Field'),
                 'description' => $this->_('The field which will be replaced by the answer of ChatGPT. If no selection is made, the response will be shown as a system notice'),
                 'options' => $this->getFieldOptions(),
-                'columnWidth' => 33,
+                'columnWidth' => 34,
             ])
         );
 
+        $inputfields->add(
+            $this->buildInputField('InputfieldCheckbox', [
+                'name+id' => 'test_settings',
+                'label' => $this->_('Test settings on save'),
+                'description' => $this->_('Send a test request to Chat GPT'),
+                'value' => 1,
+                'checked' => '',
+                'columnWidth' => 100,
+            ])
+        );
+
+        if (input()->post('test_settings')) {
+            session()->set('test_settings', 1);
+        }
+
+        if (session()->get('test_settings')) {
+            $inputfields->add(
+                $this->buildInputField('InputfieldMarkup', [
+                    'name+id' => 'debug_log',
+                    'label' => $this->_('Test results'),
+                    'options' => $this->getFieldOptions(),
+                    'columnWidth' => 100,
+                    'value' => $this->requestTest(),
+                ])
+            );
+
+            // Uncheck test_settings to prevent testing next time the module config is shown
+            $moduleConfig = modules()->getConfig('PromptChatGPT');
+            $moduleConfig['test_settings'] = 0;
+            modules()->saveConfig('PromptChatGPT', $moduleConfig);
+
+            if (!input()->post('test_settings') && session()->get('test_settings')) {
+                session()->remove('test_settings');
+            }
+        }
+
         return $inputfields;
     }
+
+    private function requestTest() {
+        $module = modules('PromptChatGPT');
+        $test = $module->testConnection();
+
+        return '<pre>'.$test.'</pre>';
+    }
 }
+

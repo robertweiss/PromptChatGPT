@@ -6,6 +6,8 @@ use Orhanerday\OpenAi\OpenAi;
 class PromptChatGPT extends Process implements Module {
     private $apiKey;
     private $chatGPT;
+    private $includedTemplates;
+    private $adminTemplates = ['admin', 'language', 'user', 'permission', 'role'];
     private $sourceField;
     private $targetField;
     private $commandoString;
@@ -23,18 +25,14 @@ class PromptChatGPT extends Process implements Module {
     public function initSettings() {
         // Set (user-)settings
         $this->apiKey = $this->get('apiKey');
+        $this->includedTemplates = $this->get('includedTemplates');
         $this->sourceField = $this->get('sourceField');
         $this->targetField = $this->get('targetField');
         $this->commandoString = $this->get('commandoString');
         $this->throttleSave = 5;
-
-        if (!$this->apiKey) {
-            return false;
-        }
-
         $this->chatGPT = new OpenAi($this->apiKey);
 
-        return true;
+        return (bool)$this->apiKey;
     }
 
     public function hookPageSave($event) {
@@ -58,6 +56,19 @@ class PromptChatGPT extends Process implements Module {
     }
 
     public function addDropdownOption($event) {
+        /** @var Page $page */
+        $page = $this->pages->get($this->input->get->id);
+
+        // Don’t show option in admin templates
+        if (in_array($page->template->name, $this->adminTemplates)) {
+            return;
+        }
+
+        // If included templates are set, only show option if page has included template
+        if (count($this->includedTemplates) && !in_array($page->template->name, $this->includedTemplates)) {
+            return;
+        }
+
         $actions = $event->return;
 
         $label = "%s + ".__('send to ChatGPT');
@@ -76,9 +87,32 @@ class PromptChatGPT extends Process implements Module {
         // https://platform.openai.com/tokenizer
         $sanitizedValue = sanitizer()->trim(sanitizer()->getTextTools()->markupToText($value), 10000);
         $content = trim($this->commandoString.' '.$sanitizedValue);
-//        ray($content);
+        $chat = $this->buildPayload($content);
 
-        $chat = [
+        $result = $this->chatGPT->chat($chat);
+        $result = json_decode($result);
+        $resultText = $result->choices[0]->message->content;
+
+        return $resultText;
+    }
+
+    public function testConnection() {
+        $chat = $this->buildPayload(__('This is a test for ChatGPT. Do you hear me?'));
+
+        try {
+            $result = $this->chatGPT->chat($chat);
+        } catch (\Exception $e) {
+            return $e;
+        }
+
+        return json_encode([
+            'request' => $chat,
+            'response' => json_decode($result)
+        ], JSON_PRETTY_PRINT);
+    }
+
+    private function buildPayload($content) {
+        return [
             'model' => 'gpt-3.5-turbo',
             'messages' => [
                 [
@@ -91,13 +125,6 @@ class PromptChatGPT extends Process implements Module {
 //            'frequency_penalty' => 0,
 //            'presence_penalty' => 0,
         ];
-
-        $result = $this->chatGPT->chat($chat);
-        $result = json_decode($result);
-        $resultText = $result->choices[0]->message->content;
-//        ray($resultText);
-
-        return $resultText;
     }
 
     private function processField(Page $page) {
