@@ -9,13 +9,15 @@ PromptChatGPT is a module for the CMS Processwire which is triggered on save and
 
 ### Settings
 - ChatGPT API Key (required)
+- Included Templates (Templates which will show the dropdown option. If no selection is made, all templates are included)
 - Source Field (Field which will be processed)
 - Target Field (Field which is used to save the response)
 - Commando string for ChatGPT (Will be prefixed to the source field so you can add hints what to do with the text, e.g. ›write a summary with max. 400 characters of the following text:‹)
+- Test Settings (send a test request to ChatGPT on module config save)
 
 ### Field support
 - PageTitle(Language)
 - Text(Language)
 - Textarea(Language)
 
-**Please note, this is an alpha release.** Please use in production only after thorough testing for your own project and create Github issues for bugs found if possible.****
+**Please note, this is an alpha release.** Please use in production only after thorough testing for your own project and create Github issues for bugs found if possible.
