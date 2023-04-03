@@ -40,7 +40,7 @@ class PromptChatGPT extends Process implements Module {
         $page = $event->arguments('page');
 
         // Only start the magic if post variable is set
-        if (strpos($this->input->post->_after_submit_action, 'save_and_chat') !== 0) {
+        if ($this->input->post->_after_submit_action && strpos($this->input->post->_after_submit_action, 'save_and_chat') !== 0) {
             return;
         }
 
