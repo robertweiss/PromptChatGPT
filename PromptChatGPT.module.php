@@ -83,6 +83,9 @@ class PromptChatGPT extends Process implements Module {
     }
 
     private function getAnswer(string $value):string {
+        if (!$value) {
+            return '';
+        }
         // Trim to max. 10000 chars, which is hopefully less than 4096 tokens
         // https://platform.openai.com/tokenizer
         $sanitizedValue = sanitizer()->trim(sanitizer()->getTextTools()->markupToText($value), 10000);
