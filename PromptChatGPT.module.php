@@ -88,10 +88,21 @@ class PromptChatGPT extends Process implements Module {
         }
         // Trim to max. 10000 chars, which is hopefully less than 4096 tokens
         // https://platform.openai.com/tokenizer
-        $sanitizedValue = sanitizer()->trim(sanitizer()->getTextTools()->markupToText($value), 10000);
+        // No more need for that, switched model to GPT-4o mini
+        // $sanitizedValue = sanitizer()->trim(sanitizer()->getTextTools()->markupToText($value), 10000);
+        $sanitizedValue = $value;
         $content = trim($this->commandoString.' '.$sanitizedValue);
-        $chat = $this->buildPayload($content);
+        $resultText = $this->chat($content);
+        
+        return $resultText;
+    }
+    
+    public function chat(string $value, array $customSettings = []):string {
+        if (!$value) {
+            return '';
+        }
 
+        $chat = $this->buildPayload($value, $customSettings);
         try {
             $result = $this->chatGPT->chat($chat);
         } catch (\Exception $e) {
@@ -117,8 +128,8 @@ class PromptChatGPT extends Process implements Module {
         return $resultText;
     }
 
-    public function testConnection() {
-        $chat = $this->buildPayload(__('This is a test for ChatGPT. Do you hear me?'));
+    public function testConnection(array $customSettings = []) {
+        $chat = $this->buildPayload(__('This is a test for ChatGPT. Do you hear me?'), $customSettings);
 
         try {
             $result = $this->chatGPT->chat($chat);
@@ -132,9 +143,9 @@ class PromptChatGPT extends Process implements Module {
         ], JSON_PRETTY_PRINT);
     }
 
-    private function buildPayload($content) {
-        return [
-            'model' => 'gpt-3.5-turbo',
+    private function buildPayload($content, array $customSettings) {
+        return array_merge($customSettings, [
+            'model' => 'gpt-4o-mini',
             'messages' => [
                 [
                     'role' => 'user',
@@ -145,7 +156,7 @@ class PromptChatGPT extends Process implements Module {
 //            'max_tokens' => 4000,
 //            'frequency_penalty' => 0,
 //            'presence_penalty' => 0,
-        ];
+        ]);
     }
 
     private function processField(Page $page) {
