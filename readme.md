@@ -1,5 +1,8 @@
 # PromptChatGPT – A Processwire module to process a field value with the Chat GPT API
 
+> [!WARNING]  
+> **Deprecation Notice (26 June 2025):** This module is now deprecated. Please use the new [PromptAI](https://github.com/robertweiss/PromptAI) module for enhanced functionality and improved AI integration.
+
 PromptChatGPT is a module for the CMS Processwire which is triggered on save and processes the value of a page field using ChatGPT. The processed value can be saved back to the field or to another field on the same page.
 
 ### Installation
